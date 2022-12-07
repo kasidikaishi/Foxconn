@@ -9,14 +9,13 @@ function fetchData() {
       return response.json();
     })
     .then(data => {
-      console.log('...', data);
       const html = `
         <div>
           <h1 id="breweries-list">Breweries List</h1>
           <label htmlFor="cityFilter">City</label>
           <select id="cityFilter" name="cityFilter">
             <option value="AllCity">All</option>
-            <option value="SanDiego">San Diego</option>
+            <option value="San Diego">San Diego</option>
             <option value="Knox">Knox</option>
             <option value="Bend">Bend</option>
             <option value="Boise">Boise</option>
@@ -44,89 +43,62 @@ function fetchData() {
             <option value="closed">closed</option>
           </select>
           <button id="submitButton" type="submit">Submit</button>
-          <div class="allBreweriesList"></div>
+          <div id="allBreweriesList"></div>
         </div>
         `
         document.querySelector('#app').insertAdjacentHTML('afterbegin', html);
+        const breweriesList = document.getElementById('allBreweriesList');
+        breweriesList.innerHTML = allBreweries(data);
+
         const breweries = document.getElementById('submitButton');
-        const allBreweries = document.getElementsByClassName('allBreweriesList');
-        breweries.addEventListener("click", (event) => {
-          allBreweries.innerHTML = filterBreweries(event, data)
-        });
+        breweries.addEventListener("click", (event) => filterBreweries(event, data));
     })
     .catch(error => {
       console.log(error);
     })
 }
 
+function allBreweries(data) {
+  if (data.length === 0) {
+    return `
+      <div>There is no brewery matching the selection</div>
+    `
+  }
+  return data
+  .map(element => {
+    let phone = element.phone;
+    return `
+      <div class="container">
+        <div class="name">Name: ${element.name}</div>
+        <div class="type">Brewery Type: ${element.brewery_type}</div>
+        <div class="street">Street: ${element.street ? element.street : ''}</div>
+        <div class="phone">Phone: ${element.phone ? phone : ''}</div>
+        <div class="website">Website: ${element.website_url ? element.website_url : ''}</div>
+      </div>
+    `
+  })
+  .join('');
+}
+
 function filterBreweries(event, data) {
-  const allBreweries = data.map(element => {
-    return `
-      <div>
-        <div>Name: ${element.name}</div>
-        <div>Brewery Type: ${element.brewery_type}</div>
-        <div>Street: ${element.street ? element.street : ''}</div>
-        <div>Phone: ${element.phone ? element.phone : ''}</div>
-        <div>Website: ${element.website_url ? element.website_url : ''}</div>
-      </div>
-    `
-  })
-  const citySelectValue = document.getElementById('cityFilter');
-  const typeSelectValue = document.getElementById('typeFilter');
-  const breweriesFilter = data.filter(element => {
-    if (citySelectValue === 'All' && typeSelectValue === 'All') {
-      return `
-        <div>
-          <div>Name: ${element.name}</div>
-          <div>Brewery Type: ${element.brewery_type}</div>
-          <div>Street: ${element.street ? element.street : ''}</div>
-          <div>Phone: ${element.phone ? element.phone : ''}</div>
-          <div>Website: ${element.website_url ? element.website_url : ''}</div>
-        </div>
-      `
-    }
-    else if (citySelectValue === 'All' && element.brewery_type === typeSelectValue) {
-      return `
-      <div>
-        <div>Name: ${element.name}</div>
-        <div>Brewery Type: ${element.brewery_type}</div>
-        <div>Street: ${element.street ? element.street : ''}</div>
-        <div>Phone: ${element.phone ? element.phone : ''}</div>
-        <div>Website: ${element.website_url ? element.website_url : ''}</div>
-      </div>
-      `
-    }
-    else if (typeSelectValue === 'All' && element.city === citySelectValue) {
-      return `
-      <div>
-        <div>Name: ${element.name}</div>
-        <div>Brewery Type: ${element.brewery_type}</div>
-        <div>Street: ${element.street ? element.street : ''}</div>
-        <div>Phone: ${element.phone ? element.phone : ''}</div>
-        <div>Website: ${element.website_url ? element.website_url : ''}</div>
-      </div>
-      `
-    }
-    else if(element.city === citySelectValue && element.brewery_type === typeSelectValue) {
-      return `
-        <div>
-          <div>Name: ${element.name}</div>
-          <div>Brewery Type: ${element.brewery_type}</div>
-          <div>Street: ${element.street ? element.street : ''}</div>
-          <div>Phone: ${element.phone ? element.phone : ''}</div>
-          <div>Website: ${element.website_url ? element.website_url : ''}</div>
-        </div>
-      `
-    }
-  })
-  if (event.target.tagName === 'BUTTON') {
-    return `
-    ${breweriesFilter}
-    `
+  const citySelectValue = document.getElementById('cityFilter').value;
+  const typeSelectValue = document.getElementById('typeFilter').value;
+  let breweriesFilter = [];
+  if (citySelectValue !== 'AllCity' && typeSelectValue !== 'AllType') {
+    breweriesFilter = data.filter(element => element.city === citySelectValue && element.brewery_type === typeSelectValue);
+  } else if (citySelectValue !== 'AllCity') {
+    breweriesFilter = data.filter(element => element.city === citySelectValue);
+  } else if (typeSelectValue !== 'AllType') {
+    breweriesFilter = data.filter(element => element.brewery_type === typeSelectValue);
   } else {
-    return `
-    ${allBreweries}
-    `
+    breweriesFilter = data;
+  }
+
+  const breweriesList = document.getElementById('allBreweriesList');
+  if (event.target.tagName === 'BUTTON') {
+    breweriesList.innerHTML = allBreweries(breweriesFilter)
+  } else {
+    breweriesList.innerHTML = allBreweries(data)
   }
 }
 
